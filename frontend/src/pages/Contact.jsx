@@ -82,7 +82,8 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Visit Us</h3>
-                  <p className="text-gray-600">Jaipur, Rajasthan, India</p>
+                  <p className="text-gray-600">4/164 SFS Near B2 Bypass Mansarovar</p>
+                  <p className="text-gray-600">Nearby Airport Jaipur</p>
                 </div>
               </div>
 
@@ -92,8 +93,8 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Call Us</h3>
-                  <p className="text-gray-600">+91 12345 67890</p>
-                  <p className="text-gray-600">+91 98765 43210</p>
+                  <p className="text-gray-600">+91 9587084879</p>
+                  <p className="text-gray-600">+91 9829301061</p>
                 </div>
               </div>
 
@@ -104,7 +105,6 @@ const Contact = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">Email Us</h3>
                   <p className="text-gray-600">info@abhimanyuholidays.com</p>
-                  <p className="text-gray-600">support@abhimanyuholidays.com</p>
                 </div>
               </div>
             </div>

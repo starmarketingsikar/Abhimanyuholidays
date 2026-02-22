@@ -5,13 +5,12 @@ import {
   Upload,
   Plus,
   X,
-  Users,
   Hotel,
   MessageSquare,
   LogOut,
-  Eye,
   Check,
   XCircle,
+  Trash2,
 } from "lucide-react";
 
 const Admin = () => {
@@ -21,6 +20,10 @@ const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [contactSubmissions, setContactSubmissions] = useState([]);
   const [hotelBookings, setHotelBookings] = useState([]);
+  const [oneDayTours, setOneDayTours] = useState([]);
+  const [tourPackages, setTourPackages] = useState([]);
+  const [deletingTourId, setDeletingTourId] = useState(null);
+  const [deletingPackageId, setDeletingPackageId] = useState(null);
   const [oneDayTourData, setOneDayTourData] = useState({
     title: "",
     description: "",
@@ -30,8 +33,6 @@ const Admin = () => {
     details: "",
     image: null,
   });
-
-  console.log("Contact Submissions:", contactSubmissions);
 
   const [tourPackageData, setTourPackageData] = useState({
     title: "",
@@ -51,6 +52,8 @@ const Admin = () => {
     setIsAuthenticated(true);
     fetchContactSubmissions();
     fetchHotelBookings();
+    fetchOneDayTours();
+    fetchTourPackages();
   }, [navigate]);
 
   useEffect(() => {
@@ -60,6 +63,12 @@ const Admin = () => {
     }
     if (activeTab === "hotel-bookings") {
       fetchHotelBookings();
+    }
+    if (activeTab === "one-day-tour") {
+      fetchOneDayTours();
+    }
+    if (activeTab === "tour-package") {
+      fetchTourPackages();
     }
   }, [activeTab, isAuthenticated]);
 
@@ -124,6 +133,46 @@ const Admin = () => {
     }
   };
 
+  const fetchOneDayTours = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"}/api/admin/one-day-tours`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setOneDayTours(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Error fetching one day tours:", error);
+    }
+  };
+
+  const fetchTourPackages = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"}/api/admin/tour-packages`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setTourPackages(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Error fetching tour packages:", error);
+    }
+  };
+
   const updateContactStatus = async (submissionId, status) => {
     try {
       const token = localStorage.getItem("adminToken");
@@ -148,6 +197,74 @@ const Admin = () => {
       }
     } catch (error) {
       console.error("Error updating status:", error);
+    }
+  };
+
+  const deleteOneDayTour = async (tourId) => {
+    try {
+      setDeletingTourId(tourId);
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"}/api/admin/one-day-tours/${tourId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete one day tour");
+      }
+
+      toast({
+        title: "Deleted",
+        description: "One day tour removed successfully.",
+      });
+      fetchOneDayTours();
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "One day tour delete nahi ho paaya.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingTourId(null);
+    }
+  };
+
+  const deleteTourPackage = async (packageId) => {
+    try {
+      setDeletingPackageId(packageId);
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"}/api/admin/tour-packages/${packageId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete tour package");
+      }
+
+      toast({
+        title: "Deleted",
+        description: "Tour package removed successfully.",
+      });
+      fetchTourPackages();
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "Tour package delete nahi ho paaya.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingPackageId(null);
     }
   };
 
@@ -248,6 +365,7 @@ const Admin = () => {
           title: "One Day Tour Added!",
           description: "The tour has been successfully added to the system.",
         });
+        fetchOneDayTours();
         setOneDayTourData({
           title: "",
           description: "",
@@ -304,6 +422,7 @@ const Admin = () => {
           title: "Tour Package Added!",
           description: "The package has been successfully added to the system.",
         });
+        fetchTourPackages();
         setTourPackageData({
           title: "",
           description: "",
@@ -554,6 +673,56 @@ const Admin = () => {
                 Add One Day Tour
               </button>
             </form>
+
+            <div className="mt-10 border-t pt-8">
+              <div className="flex items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Existing One Day Tours ({oneDayTours.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={fetchOneDayTours}
+                  className="ml-auto text-sm font-medium text-orange-600 hover:text-orange-700"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {oneDayTours.length === 0 ? (
+                <p className="text-gray-500">No one day tours added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {oneDayTours.map((tour) => (
+                    <div
+                      key={tour.id}
+                      className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-4"
+                    >
+                      <img
+                        src={tour.image}
+                        alt={tour.title}
+                        className="w-full md:w-28 h-20 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{tour.title}</p>
+                        <p className="text-sm text-gray-600">
+                          {tour.duration} • {tour.price}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{tour.id}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteOneDayTour(tour.id)}
+                        disabled={deletingTourId === tour.id}
+                        className="inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60"
+                      >
+                        <Trash2 size={16} className="mr-1" />
+                        {deletingTourId === tour.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -691,6 +860,56 @@ const Admin = () => {
                 Add Tour Package
               </button>
             </form>
+
+            <div className="mt-10 border-t pt-8">
+              <div className="flex items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Existing Tour Packages ({tourPackages.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={fetchTourPackages}
+                  className="ml-auto text-sm font-medium text-orange-600 hover:text-orange-700"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {tourPackages.length === 0 ? (
+                <p className="text-gray-500">No tour packages added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {tourPackages.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-4"
+                    >
+                      <img
+                        src={pkg.image}
+                        alt={pkg.title}
+                        className="w-full md:w-28 h-20 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{pkg.title}</p>
+                        <p className="text-sm text-gray-600">
+                          {pkg.duration} • {pkg.price}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{pkg.id}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteTourPackage(pkg.id)}
+                        disabled={deletingPackageId === pkg.id}
+                        className="inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60"
+                      >
+                        <Trash2 size={16} className="mr-1" />
+                        {deletingPackageId === pkg.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
         {/* Contact Inquiries Tab */}

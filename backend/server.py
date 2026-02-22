@@ -220,6 +220,18 @@ async def create_one_day_tour(
     await one_day_tours_collection.insert_one(tour.dict())
     return tour
 
+@api_router.get("/admin/one-day-tours", response_model=List[OneDayTour])
+async def get_admin_one_day_tours(current_user: str = Depends(get_current_user)):
+    tours = await one_day_tours_collection.find().sort("created_at", -1).to_list(1000)
+    return [OneDayTour(**tour) for tour in tours]
+
+@api_router.delete("/admin/one-day-tours/{tour_id}")
+async def delete_one_day_tour(tour_id: str, current_user: str = Depends(get_current_user)):
+    result = await one_day_tours_collection.delete_one({"id": tour_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tour not found")
+    return {"status": "success", "message": "One day tour deleted successfully"}
+
 @api_router.post("/one-day-tours/{tour_id}/bookings")
 async def create_tour_booking(tour_id: str, booking: TourBookingCreate):
     tour = await one_day_tours_collection.find_one({"id": tour_id})
@@ -282,6 +294,18 @@ async def create_tour_package(
     
     await tour_packages_collection.insert_one(package.dict())
     return package
+
+@api_router.get("/admin/tour-packages", response_model=List[TourPackage])
+async def get_admin_tour_packages(current_user: str = Depends(get_current_user)):
+    packages = await tour_packages_collection.find().sort("created_at", -1).to_list(1000)
+    return [TourPackage(**pkg) for pkg in packages]
+
+@api_router.delete("/admin/tour-packages/{package_id}")
+async def delete_tour_package(package_id: str, current_user: str = Depends(get_current_user)):
+    result = await tour_packages_collection.delete_one({"id": package_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tour package not found")
+    return {"status": "success", "message": "Tour package deleted successfully"}
 
 @api_router.post("/tour-packages/{package_id}/bookings")
 async def create_package_booking(package_id: str, booking: TourBookingCreate):
