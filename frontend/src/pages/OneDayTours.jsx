@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import TourCard from '../components/TourCard';
 import { oneDayTours } from '../data/mockData';
 
 const OneDayTours = () => {
+  const [apiTours, setApiTours] = useState([]);
+
+  useEffect(() => {
+    const fetchTours = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'}/api/one-day-tours`,
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        setApiTours(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching one day tours:', error);
+      }
+    };
+
+    fetchTours();
+  }, []);
+
+  const allTours = useMemo(() => {
+    const merged = [...oneDayTours];
+    const existingIds = new Set(oneDayTours.map((tour) => tour.id));
+    apiTours.forEach((tour) => {
+      if (!existingIds.has(tour.id)) {
+        merged.push(tour);
+      }
+    });
+    return merged;
+  }, [apiTours]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -16,7 +46,7 @@ const OneDayTours = () => {
       {/* Tours Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {oneDayTours.map((tour) => (
+          {allTours.map((tour) => (
             <TourCard key={tour.id} tour={tour} />
           ))}
         </div>

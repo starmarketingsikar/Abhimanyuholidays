@@ -9,6 +9,9 @@ from typing import List
 from datetime import timedelta
 import shutil
 import uuid
+import time
+import hashlib
+import requests
 
 from models import (
     ContactSubmission, ContactSubmissionCreate,
@@ -70,6 +73,49 @@ async def save_upload_file(upload_file: UploadFile) -> str:
         shutil.copyfileobj(upload_file.file, buffer)
     
     return f"/uploads/{filename}"
+
+async def upload_image(upload_file: UploadFile, folder: str) -> str:
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+    api_key = os.environ.get("CLOUDINARY_API_KEY")
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET")
+
+    if not cloud_name or not api_key or not api_secret:
+        logger.warning("Cloudinary credentials missing. Falling back to local uploads.")
+        return await save_upload_file(upload_file)
+
+    timestamp = int(time.time())
+    sign_params = {
+        "folder": folder,
+        "timestamp": timestamp,
+    }
+    to_sign = "&".join(f"{k}={v}" for k, v in sorted(sign_params.items()))
+    signature = hashlib.sha1(f"{to_sign}{api_secret}".encode("utf-8")).hexdigest()
+    upload_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload"
+
+    file_bytes = await upload_file.read()
+    files = {
+        "file": (
+            upload_file.filename,
+            file_bytes,
+            upload_file.content_type or "application/octet-stream",
+        )
+    }
+    data = {
+        **sign_params,
+        "api_key": api_key,
+        "signature": signature,
+    }
+
+    response = requests.post(upload_url, data=data, files=files, timeout=30)
+    if response.status_code >= 400:
+        logger.error("Cloudinary upload failed: %s", response.text)
+        raise HTTPException(status_code=500, detail="Image upload failed")
+
+    upload_data = response.json()
+    secure_url = upload_data.get("secure_url")
+    if not secure_url:
+        raise HTTPException(status_code=500, detail="Image upload failed")
+    return secure_url
 
 # ============== Admin Authentication ==============
 @api_router.post("/admin/login")
@@ -157,7 +203,7 @@ async def create_one_day_tour(
 ):
     import json
     
-    image_url = await save_upload_file(image)
+    image_url = await upload_image(image, "abhimanyuholidays/one-day-tours")
     highlights_list = json.loads(highlights)
     
     tour = OneDayTour(
@@ -221,7 +267,7 @@ async def create_tour_package(
 ):
     import json
     
-    image_url = await save_upload_file(image)
+    image_url = await upload_image(image, "abhimanyuholidays/tour-packages")
     destinations_list = json.loads(destinations)
     
     package = TourPackage(

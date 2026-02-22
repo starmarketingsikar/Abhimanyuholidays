@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { oneDayTours } from '../data/mockData';
 import { Clock, MapPin, ArrowLeft, Calendar, Users } from 'lucide-react';
@@ -7,7 +7,9 @@ import { useToast } from '../hooks/use-toast';
 const TourDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const tour = oneDayTours.find((t) => t.id === id);
+  const [apiTour, setApiTour] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const tour = oneDayTours.find((t) => t.id === id) || apiTour;
   
   const [formData, setFormData] = useState({
     name: '',
@@ -18,6 +20,39 @@ const TourDetail = () => {
     children: '0',
     message: ''
   });
+
+  useEffect(() => {
+    const fetchTour = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'}/api/one-day-tours/${id}`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setApiTour(data);
+        }
+      } catch (error) {
+        console.error('Error fetching one day tour detail:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (oneDayTours.some((t) => t.id === id)) {
+      setIsLoading(false);
+      return;
+    }
+
+    fetchTour();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading tour...</p>
+      </div>
+    );
+  }
 
   if (!tour) {
     return (

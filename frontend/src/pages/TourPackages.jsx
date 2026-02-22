@@ -1,9 +1,39 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tourPackages } from '../data/mockData';
 import { ArrowRight, MapPin, Calendar } from 'lucide-react';
 
 const TourPackages = () => {
+  const [apiPackages, setApiPackages] = useState([]);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'}/api/tour-packages`,
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        setApiPackages(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching tour packages:', error);
+      }
+    };
+
+    fetchPackages();
+  }, []);
+
+  const allPackages = useMemo(() => {
+    const merged = [...tourPackages];
+    const existingIds = new Set(tourPackages.map((pkg) => pkg.id));
+    apiPackages.forEach((pkg) => {
+      if (!existingIds.has(pkg.id)) {
+        merged.push(pkg);
+      }
+    });
+    return merged;
+  }, [apiPackages]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -17,7 +47,7 @@ const TourPackages = () => {
       {/* Packages Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {tourPackages.map((pkg) => (
+          {allPackages.map((pkg) => (
             <div
               key={pkg.id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group"

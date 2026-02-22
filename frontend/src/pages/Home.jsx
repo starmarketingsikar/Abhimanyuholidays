@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../components/HeroCarousel';
 import TourCard from '../components/TourCard';
@@ -17,6 +17,8 @@ const Home = () => {
     subject: '',
     message: '',
   });
+  const [apiOneDayTours, setApiOneDayTours] = useState([]);
+  const [apiTourPackages, setApiTourPackages] = useState([]);
 
   const handleContactChange = (e) => {
     setContactForm({ ...contactForm, [e.target.name]: e.target.value });
@@ -59,6 +61,52 @@ const Home = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [toursResponse, packagesResponse] = await Promise.all([
+          fetch(`${backendUrl}/api/one-day-tours`),
+          fetch(`${backendUrl}/api/tour-packages`),
+        ]);
+
+        if (toursResponse.ok) {
+          const toursData = await toursResponse.json();
+          setApiOneDayTours(Array.isArray(toursData) ? toursData : []);
+        }
+        if (packagesResponse.ok) {
+          const packagesData = await packagesResponse.json();
+          setApiTourPackages(Array.isArray(packagesData) ? packagesData : []);
+        }
+      } catch (error) {
+        console.error('Error fetching home page API data:', error);
+      }
+    };
+
+    fetchData();
+  }, [backendUrl]);
+
+  const mergedOneDayTours = useMemo(() => {
+    const merged = [...oneDayTours];
+    const existingIds = new Set(oneDayTours.map((tour) => tour.id));
+    apiOneDayTours.forEach((tour) => {
+      if (!existingIds.has(tour.id)) {
+        merged.push(tour);
+      }
+    });
+    return merged;
+  }, [apiOneDayTours]);
+
+  const mergedTourPackages = useMemo(() => {
+    const merged = [...tourPackages];
+    const existingIds = new Set(tourPackages.map((pkg) => pkg.id));
+    apiTourPackages.forEach((pkg) => {
+      if (!existingIds.has(pkg.id)) {
+        merged.push(pkg);
+      }
+    });
+    return merged;
+  }, [apiTourPackages]);
 
   return (
     <div className="min-h-screen">
@@ -104,7 +152,7 @@ const Home = () => {
             <h3 className="text-2xl md:text-3xl font-semibold text-blue-600">One Day Tours</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            {oneDayTours.map((tour) => (
+            {mergedOneDayTours.map((tour) => (
               <TourCard key={tour.id} tour={tour} />
             ))}
           </div>
@@ -130,7 +178,7 @@ const Home = () => {
             <p className="text-gray-600">Explore most popular & best travel deals at affordable price.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tourPackages.map((pkg) => (
+            {mergedTourPackages.map((pkg) => (
               <div
                 key={pkg.id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
