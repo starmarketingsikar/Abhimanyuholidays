@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends, Body
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -120,7 +120,7 @@ async def get_contact_submissions(current_user: str = Depends(get_current_user))
 @api_router.patch("/admin/contact-submissions/{submission_id}")
 async def update_contact_status(
     submission_id: str, 
-    status: str,
+    status: str = Body(..., embed=True),
     current_user: str = Depends(get_current_user)
 ):
     result = await contact_submissions_collection.update_one(

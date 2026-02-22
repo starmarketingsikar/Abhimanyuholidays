@@ -1,11 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../components/HeroCarousel';
 import TourCard from '../components/TourCard';
 import { oneDayTours, tourPackages, taxiServices, hotels, features, achievements } from '../data/mockData';
 import { ArrowRight } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 
 const Home = () => {
+  const { toast } = useToast();
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: '',
+  });
+
+  const handleContactChange = (e) => {
+    setContactForm({ ...contactForm, [e.target.name]: e.target.value });
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit contact form');
+      }
+
+      toast({
+        title: 'Message Sent!',
+        description: "Thank you for contacting us. We'll get back to you shortly.",
+      });
+      setContactForm({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+      });
+    } catch (error) {
+      toast({
+        title: 'Submission Failed',
+        description: 'Contact form submit nahi ho paya. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Carousel */}
@@ -238,13 +292,16 @@ const Home = () => {
             </h2>
           </div>
           <div className="bg-white rounded-lg shadow-md p-8">
-            <form className="space-y-6">
+            <form onSubmit={handleContactSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name *
                 </label>
                 <input
                   type="text"
+                  name="name"
+                  value={contactForm.name}
+                  onChange={handleContactChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
@@ -255,6 +312,9 @@ const Home = () => {
                 </label>
                 <input
                   type="email"
+                  name="email"
+                  value={contactForm.email}
+                  onChange={handleContactChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
@@ -265,6 +325,9 @@ const Home = () => {
                 </label>
                 <input
                   type="tel"
+                  name="phone"
+                  value={contactForm.phone}
+                  onChange={handleContactChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
@@ -275,6 +338,9 @@ const Home = () => {
                 </label>
                 <input
                   type="text"
+                  name="subject"
+                  value={contactForm.subject}
+                  onChange={handleContactChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
@@ -285,15 +351,19 @@ const Home = () => {
                 </label>
                 <textarea
                   rows="5"
+                  name="message"
+                  value={contactForm.message}
+                  onChange={handleContactChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 ></textarea>
               </div>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-md font-semibold transition-colors"
               >
-                Send Message
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>

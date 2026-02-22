@@ -22,7 +22,7 @@ class ContactSubmission(BaseModel):
     phone: str
     subject: str
     message: str
-    status: str = 'new'  # 'new' | 'responded'
+    status: str = 'pending'  # 'pending' | 'resolved' | 'dismissed'
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class ContactSubmissionCreate(BaseModel):

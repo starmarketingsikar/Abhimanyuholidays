@@ -4,6 +4,8 @@ import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 const Contact = () => {
   const { toast } = useToast();
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -12,19 +14,42 @@ const Contact = () => {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    toast({
-      title: "Message Sent!",
-      description: "Thank you for contacting us. We'll get back to you shortly.",
-    });
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit contact form');
+      }
+
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We'll get back to you shortly.",
+      });
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "Contact form submit nahi ho paya. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -168,10 +193,11 @@ const Contact = () => {
                 </div>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-md font-semibold transition-colors flex items-center justify-center"
                 >
                   <Send className="mr-2" size={20} />
-                  Send Message
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
             </div>

@@ -31,6 +31,8 @@ const Admin = () => {
     image: null,
   });
 
+  console.log("Contact Submissions:", contactSubmissions);
+
   const [tourPackageData, setTourPackageData] = useState({
     title: "",
     description: "",
@@ -51,6 +53,24 @@ const Admin = () => {
     fetchHotelBookings();
   }, [navigate]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab === "contact-inquiries") {
+      fetchContactSubmissions();
+    }
+    if (activeTab === "hotel-bookings") {
+      fetchHotelBookings();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || activeTab !== "contact-inquiries") return;
+    const intervalId = setInterval(() => {
+      fetchContactSubmissions();
+    }, 8000);
+    return () => clearInterval(intervalId);
+  }, [activeTab, isAuthenticated]);
+
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminUser");
@@ -67,7 +87,10 @@ const Admin = () => {
       const response = await fetch(
         `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"}/api/admin/contact-submissions`,
         {
+          cache: "no-store",
           headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
             Authorization: `Bearer ${token}`,
           },
         },
@@ -678,6 +701,13 @@ const Admin = () => {
               <h2 className="text-2xl font-bold text-gray-900">
                 Contact Inquiries
               </h2>
+              <button
+                type="button"
+                onClick={fetchContactSubmissions}
+                className="ml-auto text-sm font-medium text-orange-600 hover:text-orange-700"
+              >
+                Refresh
+              </button>
             </div>
 
             {contactSubmissions.length === 0 ? (
@@ -710,7 +740,8 @@ const Admin = () => {
                       <div className="flex items-center space-x-2">
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
-                            submission.status === "pending"
+                            submission.status === "pending" ||
+                            submission.status === "new"
                               ? "bg-yellow-100 text-yellow-800"
                               : submission.status === "resolved"
                                 ? "bg-green-100 text-green-800"
@@ -719,7 +750,8 @@ const Admin = () => {
                         >
                           {submission.status}
                         </span>
-                        {submission.status === "pending" && (
+                        {(submission.status === "pending" ||
+                          submission.status === "new") && (
                           <>
                             <button
                               onClick={() =>

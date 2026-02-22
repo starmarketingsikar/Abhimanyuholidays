@@ -4,6 +4,7 @@ import { useToast } from "../hooks/use-toast";
 import { Lock, User } from "lucide-react";
 
 const AdminLogin = () => {
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
@@ -23,7 +24,7 @@ const AdminLogin = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/admin/login`,
+        `${backendUrl}/api/admin/login`,
         {
           method: "POST",
           headers: {
